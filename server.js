@@ -1,7 +1,6 @@
-const http = require("http");
+import app from "./app.js";
 
-const server = http.createServer((req, res) => {
-  res.end("Voilà la réponse du serveur !");
+const port = process.env.PORT || 4000;
+app.listen(port, () => {
+  console.log(`Mon vieux grimoire app listening on port ${port}`);
 });
-
-server.listen(process.env.PORT || 3000);

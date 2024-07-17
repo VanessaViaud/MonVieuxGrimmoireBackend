@@ -1,20 +1,21 @@
-const Book = require("../models/book");
+import Book /*, { findOne, updateOne, deleteOne, find }*/ from "../models/books.js";
 
-exports.createBook = (req, res, next) => {
+export function createBook(req, res, next) {
   const book = new Book({
+    id: req.body.id,
+    userId: req.body.userId,
     title: req.body.title,
     author: req.body.author,
     imageUrl: req.body.imageUrl,
     year: req.body.year,
     genre: req.body.genre,
-    stars: req.body.stars,
-    userId: req.body.userId,
+    ratings: req.body.ratings,
   });
   book
     .save()
     .then(() => {
       res.status(201).json({
-        message: "Post saved successfully!",
+        message: "Votre livre a bien été ajouté!",
       });
     })
     .catch((error) => {
@@ -22,9 +23,9 @@ exports.createBook = (req, res, next) => {
         error: error,
       });
     });
-};
+}
 
-exports.getOneBook = (req, res, next) => {
+export function getOneBook(req, res, next) {
   Book.findOne({
     _id: req.params.id,
   })
@@ -36,23 +37,23 @@ exports.getOneBook = (req, res, next) => {
         error: error,
       });
     });
-};
+}
 
-exports.modifyBook = (req, res, next) => {
+export function modifyBook(req, res, next) {
   const book = new Book({
-    _id: req.params.id,
+    id: req.body.id,
+    userId: req.body.userId,
     title: req.body.title,
     author: req.body.author,
     imageUrl: req.body.imageUrl,
     year: req.body.year,
     genre: req.body.genre,
-    stars: req.body.stars,
-    userId: req.body.userId,
+    ratings: req.body.ratings,
   });
-  Book.updateOne({ _id: req.params.id }, book)
+  Book.updateOne({ id: req.params.id }, book)
     .then(() => {
       res.status(201).json({
-        message: "Book updated successfully!",
+        message: "Votre livre a bien été modifié!",
       });
     })
     .catch((error) => {
@@ -60,13 +61,13 @@ exports.modifyBook = (req, res, next) => {
         error: error,
       });
     });
-};
+}
 
-exports.deleteBook = (req, res, next) => {
-  Book.deleteOne({ _id: req.params.id })
+export function deleteBook(req, res, next) {
+  Book.deleteOne({ id: req.params.id })
     .then(() => {
       res.status(200).json({
-        message: "Deleted!",
+        message: "Votre livre a bien été upprimé!",
       });
     })
     .catch((error) => {
@@ -74,9 +75,9 @@ exports.deleteBook = (req, res, next) => {
         error: error,
       });
     });
-};
+}
 
-exports.getAllLibrary = (req, res, next) => {
+export function getAllLibrary(req, res, next) {
   Book.find()
     .then((books) => {
       res.status(200).json(books);
@@ -86,4 +87,4 @@ exports.getAllLibrary = (req, res, next) => {
         error: error,
       });
     });
-};
+}
