@@ -1,5 +1,5 @@
 import { Router } from "express";
-
+import { auth } from "../middleware/auth.js";
 import {
   getAllLibrary,
   createBook,
@@ -10,9 +10,9 @@ import {
 
 const libraryRouter = Router();
 libraryRouter.get("/books/", getAllLibrary);
-libraryRouter.post("/", createBook);
+libraryRouter.post("/", auth, createBook);
 libraryRouter.get("/books/:id", getOneBook);
-libraryRouter.put("/books/:id", modifyBook);
-libraryRouter.delete("/books/:id", deleteBook);
+libraryRouter.put("/books/:id", auth, modifyBook);
+libraryRouter.delete("/books/:id", auth, deleteBook);
 
 export default libraryRouter;

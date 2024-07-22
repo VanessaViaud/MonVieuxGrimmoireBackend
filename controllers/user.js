@@ -1,6 +1,6 @@
 import User from "../models/users.js";
-import pkg from "bcrypt";
-const { bcrypt } = pkg;
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 export function signUp(req, res, next) {
   bcrypt
@@ -13,9 +13,15 @@ export function signUp(req, res, next) {
       user
         .save()
         .then(() => res.status(201).json({ message: "Utilisateur créé !" }))
-        .catch((error) => res.status(400).json({ error }));
+        .catch((error) => {
+          console.log(error);
+          res.status(400).json({ error });
+        });
     })
-    .catch((error) => res.status(500).json({ error }));
+    .catch((error) => {
+      console.log(error);
+      res.status(500).json({ error });
+    });
 }
 
 export function logIn(req, res, next) {
@@ -36,7 +42,9 @@ export function logIn(req, res, next) {
           }
           res.status(200).json({
             userId: user._id,
-            token: "TOKEN",
+            token: jwt.sign({ userId: user._id }, "RANDOM_TOKEN_SECRET", {
+              expiresIn: "24h",
+            }),
           });
         })
         .catch((error) => res.status(500).json({ error }));

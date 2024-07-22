@@ -27,7 +27,7 @@ export function createBook(req, res, next) {
 
 export function getOneBook(req, res, next) {
   Book.findOne({
-    id: req.params.id,
+    _id: req.params.id,
   })
     .then((book) => {
       res.status(200).json(book);

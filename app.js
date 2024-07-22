@@ -29,6 +29,6 @@ app.use((req, res, next) => {
   next();
 });
 app.use("/api/", libraryRouter);
-app.use("/api/auth", userRouter);
+app.use("/api/auth/", userRouter);
 
 export default app;
