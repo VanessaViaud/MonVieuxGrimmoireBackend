@@ -2,7 +2,9 @@ import express from "express";
 import { connect } from "mongoose";
 import pkg from "body-parser";
 const { json } = pkg;
-import router from "./routes/router.js";
+import libraryRouter from "./routes/libraryRouter.js";
+import userRouter from "./routes/userRouter.js";
+
 connect(
   "mongodb+srv://Vanessa:nIIulmKTbR2dj0wr@cluster0.o0sg9il.mongodb.net/MonVieuxGrimmoire?retryWrites=true&w=majority&appName=Cluster0",
   { useNewUrlParser: true, useUnifiedTopology: true }
@@ -26,6 +28,7 @@ app.use((req, res, next) => {
   );
   next();
 });
-app.use("/api/", router);
+app.use("/api/", libraryRouter);
+app.use("/api/auth", userRouter);
 
 export default app;
