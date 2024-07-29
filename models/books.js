@@ -1,8 +1,8 @@
 import { Schema, model } from "mongoose";
 
 const bookSchema = Schema({
-  id: { type: String, required: true },
-  userId: { type: String, required: true },
+  /*   id: { type: String, required: true },
+   */ userId: { type: String, required: true },
   title: { type: String, required: true },
   author: { type: String, required: true },
   imageUrl: { type: String, required: true },

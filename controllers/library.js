@@ -1,15 +1,24 @@
 import Book /*, { findOne, updateOne, deleteOne, find }*/ from "../models/books.js";
+import fs from "fs";
 
 export function createBook(req, res, next) {
+  console.log("body==>", req.body);
+  const bookObject = JSON.parse(req.body.book);
+  delete bookObject._id;
+  delete bookObject._userId;
   const book = new Book({
-    id: req.body.id,
-    userId: req.body.userId,
-    title: req.body.title,
-    author: req.body.author,
-    imageUrl: req.body.imageUrl,
-    year: req.body.year,
-    genre: req.body.genre,
-    ratings: req.body.ratings,
+    // ...bookObject,
+    //id: req.body.id,
+    userId: req.auth.userId,
+    title: bookObject.title,
+    author: bookObject.author,
+    year: bookObject.year,
+    imageUrl: `${req.protocol}://${req.get("host")}/images/${
+      req.file.filename
+    }`,
+    genre: bookObject.genre,
+    ratings: bookObject.ratings,
+    averageRating: bookObject.averageRating,
   });
   book
     .save()
@@ -19,6 +28,7 @@ export function createBook(req, res, next) {
       });
     })
     .catch((error) => {
+      console.log(error);
       res.status(400).json({
         error: error,
       });
@@ -40,40 +50,56 @@ export function getOneBook(req, res, next) {
 }
 
 export function modifyBook(req, res, next) {
-  const book = new Book({
-    id: req.body.id,
-    userId: req.body.userId,
-    title: req.body.title,
-    author: req.body.author,
-    imageUrl: req.body.imageUrl,
-    year: req.body.year,
-    genre: req.body.genre,
-    ratings: req.body.ratings,
-  });
-  Book.updateOne({ id: req.params.id }, book)
-    .then(() => {
-      res.status(201).json({
-        message: "Votre livre a bien été modifié!",
-      });
+  const bookObject = req.file
+    ? {
+        ...JSON.parse(req.body.book),
+        imageUrl: `${req.protocol}://${req.get("host")}/images/${
+          req.file.filename
+        }`,
+      }
+    : { ...req.body };
+
+  delete bookObject._userId;
+  Book.findOne({ _id: req.params.id })
+    .then((book) => {
+      if (book.userId != req.auth.userId) {
+        res.status(401).json({ message: "Vous ne vous êtes pas authentifié" });
+      } else {
+        Book.updateOne(
+          { _id: req.params.id },
+          { ...bookObject, _id: req.params.id }
+        )
+          .then(() =>
+            res.status(200).json({ message: "Votre livre a bien été modifié" })
+          )
+          .catch((error) => res.status(401).json({ error }));
+      }
     })
     .catch((error) => {
-      res.status(400).json({
-        error: error,
-      });
+      res.status(400).json({ error });
     });
 }
 
 export function deleteBook(req, res, next) {
-  Book.deleteOne({ id: req.params.id })
-    .then(() => {
-      res.status(200).json({
-        message: "Votre livre a bien été upprimé!",
-      });
+  Book.findOne({ _id: req.params.id })
+    .then((book) => {
+      if (book.userId != req.auth.userId) {
+        res.status(401).json({ message: "Vous ne vous êtes pas authentifié" });
+      } else {
+        const filename = book.imageUrl.split("/images/")[1];
+        fs.unlink(`images/${filename}`, () => {
+          Book.deleteOne({ _id: req.params.id })
+            .then(() => {
+              res
+                .status(200)
+                .json({ message: "Votre livre a bien été supprimé" });
+            })
+            .catch((error) => res.status(401).json({ error }));
+        });
+      }
     })
     .catch((error) => {
-      res.status(400).json({
-        error: error,
-      });
+      res.status(500).json({ error });
     });
 }
 
