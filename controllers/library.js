@@ -34,7 +34,7 @@ export function createBook(req, res, next) {
       });
     });
 }
-
+// Pour trouver un livre en particulier
 export function getOneBook(req, res, next) {
   Book.findOne({
     _id: req.params.id,
@@ -51,42 +51,65 @@ export function getOneBook(req, res, next) {
 }
 
 export function modifyBook(req, res, next) {
-  const bookObject = req.file
-    ? {
-        ...JSON.parse(req.body.book),
-        imageUrl: `${req.protocol}://${req.get("host")}/images/${
-          req.file.filename
-        }`,
-      }
-    : { ...req.body };
+  // On récupère le livre
+  const bookData = JSON.parse(req.body.book);
 
-  delete bookObject._userId;
+  // On crée l'url de la nouvelle image (modifiée ou non)
+  const imageUrl = `${req.protocol}://${req.get("host")}/images/${req.file.filename}`;
+
+  // On supprime le _userId des données pour éviter de changer le propriétaire
+  delete bookData._userId;
+
   Book.findOne({ _id: req.params.id })
     .then((book) => {
+      //Pas possible si l'utilisateur n'est pas le créateur du livre
       if (book.userId != req.auth.userId) {
         res.status(401).json({ message: "Vous ne vous êtes pas authentifié" });
       } else {
+        // On supprime l'ancienne image pour éviter les doublons dans le dossier Backend
+        const filename = book.imageUrl.split('/images/')[1];
+        fs.unlink(`images/${filename}`, (err) => {
+          if (err) {
+            console.error(err);
+          }
+        });
+
+        // Mise à jour des infos du livre
+        book.title = bookData.title;
+        book.author = bookData.author;
+        book.description = bookData.description;
+        book.genre = bookData.genre;
+        book.imageUrl = imageUrl;
+
+        // EEt on enregistre dans la base données
         Book.updateOne(
           { _id: req.params.id },
-          { ...bookObject, _id: req.params.id }
+          { 
+            title: book.title,
+            author: book.author,
+            description: book.description,
+            genre: book.genre,
+            imageUrl: book.imageUrl,
+            _id: req.params.id 
+          }
         )
           .then(() =>
             res.status(200).json({ message: "Votre livre a bien été modifié" })
           )
           .catch((error) => {
-            console.log(error);
+            console.error(error);
             res.status(401).json({ error });
           });
       }
     })
     .catch((error) => {
-      console.log(error);
-
+      console.error(error);
       res.status(400).json({ error });
     });
 }
 
 
+// Pour noter un livre créé par un autre utilisateur
 export function rateBook(req, res, next) {
   console.log("body==>", req.body);
 
@@ -95,21 +118,21 @@ export function rateBook(req, res, next) {
 
   // ID est bien un ObjectId valide ?
   if (!mongoose.Types.ObjectId.isValid(bookId)) {
-    return res.status(400).json({ error: "ID du livre invalide" });
+    return res.status(400).json({ error: "Identifiant du livre invalide" });
   }
 
-  // Rechercher le livre avec _id
+  // D'abord rechercher le livre avec _id
   Book.findOne({ _id: bookId })
     .then((book) => {
       if (!book) {
         return res.status(404).json({ error: "Livre non trouvé" });
       }
 
-      // Pour qu'un utilisateur ne puisse noter qu'une seule fois
+      // Vérfier qu'un utilisateur ne puisse noter qu'une seule fois
       const existingRating = book.ratings.find((r) => r.userId === userId);
 
       if (existingRating) {
-        // Note déjà mise à jour
+        // Si note déjà donnée
         existingRating.grade = rating;
       } else {
         // Sinon, on peut mettre une note
@@ -120,15 +143,11 @@ export function rateBook(req, res, next) {
       const totalRatings = book.ratings.reduce((sum, r) => sum + r.grade, 0);
       book.averageRating = totalRatings / book.ratings.length;
 
-      // Sauvegarde
+      // Sauvegarde + mise à jour du livre 
       book
         .save()
         .then((updatedBook) => {
-          res.status(200).json({
-            message: "Votre note a bien été enregistrée",
-            book: updatedBook,
-            id: updatedBook.id,
-          });
+          res.status(200).json(updatedBook);
         })
         .catch((error) => {
           console.log(error);
@@ -143,16 +162,17 @@ export function rateBook(req, res, next) {
 
 //Pour supprimer un livre
 export function deleteBook(req, res, next) {
+  // D'abord rechercher le livre avec _id
   Book.findOne({ _id: req.params.id })
     .then((book) => {
       if (!book) {
         return res.status(404).json({ message: "Livre non trouvé" });
       }
-
+      //Pas de suppression possible si l'utilisateur n'est pas le créateur du livre
       if (book.userId != req.auth.userId) {
         return res.status(401).json({ message: "Vous ne pouvez pas supprimer ce livre" });
       }
-
+      //Pour supprimer l'image enregistrée dans le dossier Backend
       const filename = book.imageUrl.split("/images/")[1];
       fs.unlink(`images/${filename}`, (err) => {
         if (err) {
@@ -189,10 +209,10 @@ export function getAllLibrary(req, res, next) {
       });
     });
 }
-// Pour afficher la librairie des mieux notés : idem que la fonction getAllLibrary ...
+// Pour afficher la librairie des mieux notés  (idem que la fonction getAllLibrary ...
 export function getBooksByBestRating(req, res, next) {
   Book.find()
-    .sort({ averageRating: -1 }) // ... Avec ajout d'un tri
+    .sort({ averageRating: -1 }) // ... Avec ajout d'un tri)
     .then((books) => {
       res.status(200).json(books);
     })
