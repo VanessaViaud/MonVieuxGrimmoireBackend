@@ -64,7 +64,7 @@ export function modifyBook(req, res, next) {
     .then((book) => {
       //Pas possible si l'utilisateur n'est pas le créateur du livre
       if (book.userId != req.auth.userId) {
-        res.status(401).json({ message: "Vous ne vous êtes pas authentifié" });
+        res.status(403).json({ message: "Vous ne vous êtes pas authentifié" });
       } else {
         // On supprime l'ancienne image pour éviter les doublons dans le dossier Backend
         const filename = book.imageUrl.split('/images/')[1];
@@ -170,7 +170,7 @@ export function deleteBook(req, res, next) {
       }
       //Pas de suppression possible si l'utilisateur n'est pas le créateur du livre
       if (book.userId != req.auth.userId) {
-        return res.status(401).json({ message: "Vous ne pouvez pas supprimer ce livre" });
+        return res.status(403).json({ message: "Vous ne pouvez pas supprimer ce livre" });
       }
       //Pour supprimer l'image enregistrée dans le dossier Backend
       const filename = book.imageUrl.split("/images/")[1];
@@ -212,7 +212,8 @@ export function getAllLibrary(req, res, next) {
 // Pour afficher la librairie des mieux notés  (idem que la fonction getAllLibrary ...
 export function getBooksByBestRating(req, res, next) {
   Book.find()
-    .sort({ averageRating: -1 }) // ... Avec ajout d'un tri)
+    .sort({ averageRating: -1 }) // ... Avec ajout d'un tri...
+    .limit(3) // et seulement les 3 premiers livres) 
     .then((books) => {
       res.status(200).json(books);
     })
