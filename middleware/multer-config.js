@@ -1,6 +1,8 @@
-import multer, { diskStorage } from "multer"; // multer pour la gestion des fichiers uploadés, avec la méthode diskStorage
+import multer, { diskStorage } from "multer";
+import sharp from "sharp";
+import fs from "fs"; // Pour supprimer le fichier temporaire si nécessaire
 
-// Dictionnaire des types MIME pour associer les extensions de fichiers
+// les types MIME pour associer les extensions de fichiers
 const MIME_TYPES = {
   "image/jpg": "jpg",
   "image/jpeg": "jpg",
@@ -9,19 +11,52 @@ const MIME_TYPES = {
 
 // stockage des fichiers
 const storage = diskStorage({
-  // destination des fichiers
   destination: (req, file, callback) => {
     callback(null, "images"); // on stocke dans le dossier "images"
   },
-  // Nom de fichier à utiliser
   filename: (req, file, callback) => {
-    // on remplcae les espaces par des underscores dans le nom du fichier original
     const name = file.originalname.split(" ").join("_");
-    // on a l'extension du fichier en fonction de son type MIME
     const extension = MIME_TYPES[file.mimetype];
-    // et le nom final du fichier avec la date actuelle pour éviter les doublons
     callback(null, name + Date.now() + "." + extension);
   },
 });
 
-export default multer({ storage: storage }).single("image");
+const upload = multer({ storage: storage }).single("image");
+
+export default (req, res, next) => {
+  upload(req, res, (err) => {
+    if (err) {
+      return res.status(500).json({ error: err.message });
+    }
+
+    if (req.file) {
+      // pour réduire l'image à 206 pixels de large
+      const filePath = req.file.path;
+      const outputFilePath = `images/resized_${req.file.filename}`;
+
+      sharp(filePath)
+        .resize(206) // largeur max de 206 pixels
+        .toFile(outputFilePath, (err, info) => {
+          if (err) {
+            return res.status(500).json({ error: err.message });
+          }
+
+          // et on supprime le fichier non redimensionné
+          fs.unlink(filePath, (err) => {
+            if (err) {
+              console.error("Erreur lors de la suppression du fichier original:", err);
+            }
+          });
+
+          // on met à jour la ref du nouveau fichier 
+          req.file.path = outputFilePath;
+          req.file.filename = `resized_${req.file.filename}`;
+          req.file.size = info.size;
+
+          next();
+        });
+    } else {
+      next();
+    }
+  });
+};
