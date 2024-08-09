@@ -1,6 +1,6 @@
 # Backend de Site de Notation de Livres
 
-Ce projet est le backend d'une application web permettant aux utilisateurs de noter et de commenter des livres. Il est construit avec Express.js et utilise MongoDB Atlas comme base de données.
+Ce projet est le backend d'un site web permettant aux utilisateurs de noter des livres et compléter la librairie. Il est construit avec Express.js et utilise MongoDB Atlas comme base de données.
 
 ## Installation
 
